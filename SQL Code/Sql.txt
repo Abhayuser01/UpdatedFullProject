@@ -1,0 +1,93 @@
+
+create database BankDatabase;
+use BankDatabase;
+drop table Transactions;
+drop table Customers;
+drop table Accounts;
+CREATE TABLE Customers (
+    Customer_id INT PRIMARY KEY Auto_Increment ,  
+    Name VARCHAR(100) NOT NULL,
+    Email VARCHAR(100) UNIQUE,
+    Phone VARCHAR(15) UNIQUE
+    );
+    
+    CREATE TABLE Accounts (
+    Account_id INT  PRIMARY KEY AUTO_INCREMENT ,
+    Customer_id INT,
+    Account_type ENUM('Savings', 'Checking', 'Loan'),
+    Balance DECIMAL(15,2) DEFAULT 0.00,
+    FOREIGN KEY (Customer_id) REFERENCES Customers(Customer_id) ON DELETE CASCADE 
+ON UPDATE CASCADE
+);
+CREATE TABLE Transactions (
+    Transaction_id INT PRIMARY KEY AUTO_INCREMENT,
+    Account_id INT,
+    Amount DECIMAL(15,2)  NOT NULL,
+    Transaction_type  ENUM('Deposit', 'Withdrawal', 'Transfer'),
+    Transaction_date  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (Account_id) REFERENCES Accounts(Account_id)ON DELETE CASCADE 
+ON UPDATE CASCADE
+);
+-- Inserting data into the Customers table
+INSERT INTO Customers (Customer_id, Name, Email, Phone)
+VALUES 
+(1, 'Rajesh Kumar', 'rajesh.kumar@example.com', '9876543210'),
+(2, 'Anita Sharma', 'anita.sharma@example.com', '9823456789'),
+(3, 'Suresh Yadav', 'suresh.yadav@example.com', '9912345678'),
+(4, 'Priya Patel', 'priya.patel@example.com', '9798765432'),
+(5, 'Vikram Singh', 'vikram.singh@example.com', '9556443322');
+
+-- Inserting data into the Accounts table
+-- Inserting data into the Accounts table
+INSERT INTO Accounts (Customer_id, Account_type, Balance)
+VALUES 
+(1, 'Savings', 10000.50), 
+(2, 'Checking', 5000.00),  
+(3, 'Loan', -2000.00),    
+(4, 'Savings', 15000.75), 
+(5, 'Checking', 2500.25);
+
+
+
+-- Inserting data into the Transactions table
+INSERT INTO Transactions (Account_id, Amount, Transaction_type)
+VALUES 
+(1, 1000.00, 'Deposit'),
+(2, 500.00, 'Deposit'),
+(3, 2000.00, 'Withdrawal'),
+(4, 500.00, 'Deposit'),
+(5, 300.00, 'Withdrawal');
+
+select * from Customers;
+select * from accounts;
+select * from transactions;
+
+
+DELIMITER //
+
+CREATE TRIGGER PreventOverdraftBeforeUpdate
+BEFORE INSERT ON Transactions
+FOR EACH ROW
+BEGIN
+    DECLARE acc_balance DECIMAL(15,2);
+
+    -- Get the current balance of the account
+    SELECT balance INTO acc_balance
+    FROM Accounts
+    WHERE account_id = NEW.account_id;
+
+    -- Check if the transaction is a withdrawal and if it exceeds the available balance
+    IF NEW.transaction_type = 'Withdrawal' AND NEW.amount > acc_balance THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Insufficient funds for withdrawal';
+    END IF;
+END //
+
+DELIMITER ;
+
+INSERT INTO Transactions (account_id, amount, transaction_type) VALUES
+(1, 17850.00, 'Withdrawal');
+
+
+
+    
